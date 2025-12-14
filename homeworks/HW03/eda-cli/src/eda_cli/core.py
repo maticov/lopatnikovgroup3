@@ -185,6 +185,22 @@ def compute_quality_flags(summary: DatasetSummary, missing_df: pd.DataFrame) -> 
     flags["max_missing_share"] = max_missing_share
     flags["too_many_missing"] = max_missing_share > 0.5
 
+    # 1. Проверка на константные колонки
+    has_constant_columns = any(col.unique == 1 and col.non_null > 0 for col in summary.columns)
+    flags["has_constant_columns"] = has_constant_columns
+
+    # 2. Проверка на категориальные колонки с высокой кардинальностью
+    # Порог: если уникальных значений больше 50% от общего числа строк
+    has_high_cardinality_categoricals = False
+
+    for col in summary.columns:
+        if not col.is_numeric:
+            if col.non_null > 0 and col.unique / col.non_null > 0.5:
+                has_high_cardinality_categoricals = True
+                break
+
+    flags["has_high_cardinality_categoricals"] = has_high_cardinality_categoricals
+
     # Простейший «скор» качества
     score = 1.0
     score -= max_missing_share  # чем больше пропусков, тем хуже
@@ -192,6 +208,10 @@ def compute_quality_flags(summary: DatasetSummary, missing_df: pd.DataFrame) -> 
         score -= 0.2
     if summary.n_cols > 100:
         score -= 0.1
+    if has_constant_columns:
+        score -= 0.1
+    if has_high_cardinality_categoricals:
+        score -= 0.15
 
     score = max(0.0, min(1.0, score))
     flags["quality_score"] = score
