@@ -247,6 +247,68 @@ curl -X POST "http://127.0.0.1:8000/quality-from-csv" \
 
 ---
 
+
+### 5. `POST /quality-flags-from-csv` – Полный набор флагов качества по CSV
+
+Эндпоинт принимает CSV-файл, внутри:
+
+- читает его в `pandas.DataFrame`;
+- вызывает функции из `eda_cli.core`:
+
+  ```  summary 
+    missing_df 
+    flags_all ```
+
+- возвращает оценку качества датасета в том же формате, что `/quality`.
+
+**Запрос:**
+
+```http
+POST /quality-flags-from-csv
+Content-Type: multipart/form-data
+file: <CSV-файл>
+```
+
+Через Swagger:
+
+- в `/docs` открыть `POST /quality-flags-from-csv`,
+- нажать `Try it out`,
+- выбрать файл (например, `data/example.csv`),
+- нажать `Execute`.
+
+**Пример вызова через `curl` (Linux/macOS/WSL):**
+
+```bash
+curl -X 'POST' \
+  'http://127.0.0.1:8000/quality-flags-from-csv' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: multipart/form-data' \
+  -F 'file=@example.csv;type=text/csv'
+```
+
+Пример ответа:
+```text
+{
+  "flags": {
+    "too_few_rows": true,
+    "too_many_columns": false,
+    "too_many_missing": false,
+    "has_constant_columns": false,
+    "has_high_cardinality_categoricals": false
+  },
+  "dataset_info": {
+    "filename": "example.csv",
+    "n_rows": 36,
+    "n_cols": 14,
+    "numeric_cols": 9,
+    "categorical_cols": 5
+  },
+  "latency_ms": 24.217300000600517
+}
+```
+---
+
+
 ## Структура проекта (упрощённо)
 
 ```text
